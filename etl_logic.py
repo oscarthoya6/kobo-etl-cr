@@ -3,16 +3,16 @@ from google.cloud import bigquery
 from koboextractor import KoboExtractor
 
 def extract_data(api_key, end_point, form_id):
-    """
-    Extract data from KoboToolbox and return a raw dataframe
-    with shortened column names.
-    """
     kobo = KoboExtractor(api_key, end_point)
     results = kobo.get_data(asset_uid=form_id).get('results')
     df = pd.DataFrame(results)
 
-    # Shorten column names immediately after extraction
+    # Shorten column names
     df.columns = df.columns.str.split('/').str[-1]
+
+    # Drop problematic nested/struct columns
+    drop_cols = ['_attachments', '_geolocation', '_tags', '_notes', '_validation_status']
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
     return df
 
