@@ -1,6 +1,7 @@
 flask
 gunicorn
-pandas
-numpy
-koboextractor
 google-cloud-bigquery
+pandas
+requests
+koboextractor
+pyarrow
