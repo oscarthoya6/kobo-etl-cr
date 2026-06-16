@@ -1,6 +1,9 @@
 import pandas as pd
 from google.cloud import bigquery
 from koboextractor import KoboExtractor
+import gspread
+from gspread_dataframe import set_with_dataframe
+from google.oauth2.service_account import Credentials
 
 def extract_data(api_key, end_point, form_id):
     kobo = KoboExtractor(api_key, end_point)
@@ -18,18 +21,11 @@ def extract_data(api_key, end_point, form_id):
 
 
 def transform_data(df):
-    """
-    Transform the raw dataframe:
-    - Drop duplicates (based on daycare_name if available)
-    - Rename columns to clean schema
-    """
-    # Drop duplicates safely
     if 'daycare_name' in df.columns:
         df = df.drop_duplicates(subset=['daycare_name'], keep='first')
     else:
         df = df.drop_duplicates()
 
-    # Rename columns to standardized names
     columns_dict = {
         'kidogo_code': 'Code',
         'county': 'County',
@@ -44,10 +40,31 @@ def transform_data(df):
 
 
 def load_to_bigquery(df, table_id):
-    """
-    Load a dataframe into BigQuery, overwriting the table.
-    """
     client = bigquery.Client()
     job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
     job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
     job.result()
+    print("✅ Data loaded into BigQuery:", table_id)
+
+
+def export_to_google_sheet(df, sheet_name, work_sheet_name, creds_path="service_account.json"):
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    gc = gspread.authorize(creds)
+
+    try:
+        sheet = gc.open(sheet_name)
+    except gspread.exceptions.SpreadsheetNotFound:
+        sheet = gc.create(sheet_name)
+
+    try:
+        worksheet = sheet.worksheet(work_sheet_name)
+        worksheet.clear()
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = sheet.add_worksheet(title=work_sheet_name, rows=df.shape[0], cols=df.shape[1])
+
+    set_with_dataframe(worksheet, df)
+    print(f"✅ Data exported to Google Sheet: {sheet_name} → {work_sheet_name}")

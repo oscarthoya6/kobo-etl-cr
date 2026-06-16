@@ -15,11 +15,16 @@ def run_etl():
     # Transform
     df_clean = etl_logic.transform_data(df_raw)
 
-    # Load to BigQuery (use the variable, not a string literal)
+    # Load to BigQuery
     raw_table = f"{PROJECT_ID}.lake.workshop_attendance_raw"
     clean_table = f"{PROJECT_ID}.warehouse.workshop_attendance"
 
     etl_logic.load_to_bigquery(df_raw, raw_table)
     etl_logic.load_to_bigquery(df_clean, clean_table)
 
-    return "ETL job completed successfully!"
+    # Export to Google Sheets
+    sheet_name = "big query test"
+    work_sheet_name = "workshop data"
+    etl_logic.export_to_google_sheet(df_clean, sheet_name, work_sheet_name)
+
+    return "ETL job completed successfully and exported to Google Sheets!"
