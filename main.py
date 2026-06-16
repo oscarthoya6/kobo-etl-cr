@@ -22,9 +22,4 @@ def run_etl():
     etl_logic.load_to_bigquery(df_raw, raw_table)
     etl_logic.load_to_bigquery(df_clean, clean_table)
 
-    # Export to Google Sheets
-    sheet_name = "big query test"
-    work_sheet_name = "workshop data"
-    etl_logic.export_to_google_sheet(df_clean, sheet_name, work_sheet_name)
-
-    return "ETL job completed successfully and exported to Google Sheets!"
+    return "ETL job completed successfully!"
